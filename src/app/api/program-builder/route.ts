@@ -90,6 +90,7 @@ export async function POST(request: NextRequest) {
         model: "claude-sonnet-4-6",
         max_tokens: 8192,
         temperature: 0.4,
+        stream: true,
         system: SYSTEM_PROMPT,
         messages: [{ role: "user", content: userMessage }],
       }),
@@ -104,30 +105,90 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const aiResult = (await anthropicRes.json()) as {
-      content: Array<{ type: string; text: string }>;
-      model: string;
-    };
-    const planMd =
-      aiResult.content.find((c) => c.type === "text")?.text || "";
+    // Stream the response through to the client
+    const encoder = new TextEncoder();
+    const decoder = new TextDecoder();
 
-    if (!planMd) {
-      return NextResponse.json(
-        { error: "AI returned an empty response. Please try again." },
-        { status: 502 }
-      );
-    }
+    const stream = new ReadableStream({
+      async start(controller) {
+        const reader = anthropicRes.body?.getReader();
+        if (!reader) {
+          controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: "error", error: "No response body" })}\n\n`));
+          controller.close();
+          return;
+        }
 
-    // In production with D1, persist to database:
-    // const db = getDB();
-    // ... create/find client, insert intake, insert program_plan
+        let buffer = "";
 
-    console.log("Program plan generated for:", body.orgName, body.contactEmail);
+        try {
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
 
-    return NextResponse.json({
-      success: true,
-      plan: planMd,
-      model: aiResult.model,
+            buffer += decoder.decode(value, { stream: true });
+            const lines = buffer.split("\n");
+            buffer = lines.pop() || "";
+
+            for (const line of lines) {
+              if (line.startsWith("data: ")) {
+                const data = line.slice(6);
+                if (data === "[DONE]") {
+                  controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: "done" })}\n\n`));
+                  continue;
+                }
+                try {
+                  const event = JSON.parse(data) as {
+                    type: string;
+                    delta?: { type: string; text?: string };
+                  };
+                  if (event.type === "content_block_delta" && event.delta?.type === "text_delta" && event.delta.text) {
+                    controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: "text", text: event.delta.text })}\n\n`));
+                  } else if (event.type === "message_stop") {
+                    controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: "done" })}\n\n`));
+                  }
+                } catch {
+                  // Skip unparseable lines
+                }
+              }
+            }
+          }
+
+          // Process remaining buffer
+          if (buffer.startsWith("data: ")) {
+            const data = buffer.slice(6);
+            if (data !== "[DONE]") {
+              try {
+                const event = JSON.parse(data) as {
+                  type: string;
+                  delta?: { type: string; text?: string };
+                };
+                if (event.type === "content_block_delta" && event.delta?.type === "text_delta" && event.delta.text) {
+                  controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: "text", text: event.delta.text })}\n\n`));
+                }
+              } catch {
+                // Skip
+              }
+            }
+          }
+
+          controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: "done" })}\n\n`));
+        } catch (err) {
+          console.error("Stream error:", err);
+          controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: "error", error: "Stream interrupted" })}\n\n`));
+        } finally {
+          controller.close();
+        }
+      },
+    });
+
+    console.log("Program plan streaming for:", body.orgName, body.contactEmail);
+
+    return new Response(stream, {
+      headers: {
+        "Content-Type": "text/event-stream",
+        "Cache-Control": "no-cache",
+        Connection: "keep-alive",
+      },
     });
   } catch (err) {
     console.error("Program builder error:", err);

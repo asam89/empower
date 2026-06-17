@@ -1,9 +1,10 @@
 name = "empower"
 compatibility_date = "2024-09-23"
+compatibility_flags = ["nodejs_compat"]
 pages_build_output_dir = ".vercel/output/static"
 
 [[d1_databases]]
 binding = "DB"
 database_name = "empower-db"
-database_id = "YOUR_D1_DATABASE_ID"  # Replace after: wrangler d1 create empower-db
+database_id = "7e173569-08e5-4af3-b6e5-a64253025e4d"
 migrations_dir = "migrations"

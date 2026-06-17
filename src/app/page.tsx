@@ -95,6 +95,110 @@ export default function Home() {
         </div>
       </section>
 
+      {/* Value Proposition */}
+      <section className="py-20 md:py-28 bg-cloud">
+        <div className="max-w-[1200px] mx-auto px-6">
+          <h2 className="text-[1.8rem] font-bold text-brand-primary mb-3 text-center">
+            A stronger spec&nbsp;ed program grows your school
+          </h2>
+          <p className="text-slate text-center max-w-2xl mx-auto mb-14 leading-relaxed">
+            When families know their children will be supported, they enrol &mdash;
+            and stay. Empower helps you build the program that makes that possible.
+          </p>
+
+          <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+            {/* Public schools */}
+            <div className="bg-surface p-8 rounded-2xl border border-border shadow-sm">
+              <div className="flex items-center gap-3 mb-5">
+                <span className="flex items-center justify-center w-11 h-11 rounded-xl bg-brand-primary/10 text-brand-primary text-[1.3rem]">
+                  🏫
+                </span>
+                <h3 className="text-[1.15rem] font-semibold">Public schools</h3>
+              </div>
+              <p className="text-slate leading-relaxed mb-5">
+                In Ontario&apos;s funding model, <strong className="text-ink">more students means more
+                per-pupil funding</strong> from the province. A well-structured special
+                education program attracts families who need that support &mdash;
+                increasing your head count and the resources that flow with it.
+              </p>
+              <div className="flex items-center gap-2 text-[0.85rem] font-medium text-brand-primary bg-brand-primary/5 rounded-lg px-4 py-3">
+                <span className="text-[1.1rem]">&#8593;</span>
+                Enrolment &rarr; funding &rarr; capacity to serve every learner
+              </div>
+            </div>
+
+            {/* Private schools */}
+            <div className="bg-surface p-8 rounded-2xl border border-border shadow-sm">
+              <div className="flex items-center gap-3 mb-5">
+                <span className="flex items-center justify-center w-11 h-11 rounded-xl bg-brand-accent/10 text-brand-accent text-[1.3rem]">
+                  🌟
+                </span>
+                <h3 className="text-[1.15rem] font-semibold">Private &amp; independent schools</h3>
+              </div>
+              <p className="text-slate leading-relaxed mb-5">
+                Families choosing private education expect excellence &mdash;
+                including for children with learning differences.
+                <strong className="text-ink"> More enrolled students means more tuition
+                revenue and a larger support team.</strong> A credible spec&nbsp;ed
+                program becomes a genuine differentiator.
+              </p>
+              <div className="flex items-center gap-2 text-[0.85rem] font-medium text-brand-accent bg-brand-accent/5 rounded-lg px-4 py-3">
+                <span className="text-[1.1rem]">&#8593;</span>
+                Enrolment &rarr; revenue &rarr; resources to support every child
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Competitive Advantage */}
+      <section className="py-20 md:py-28">
+        <div className="max-w-[1200px] mx-auto px-6">
+          <h2 className="text-[1.8rem] font-bold text-brand-primary mb-3 text-center">
+            Why schools choose Empower
+          </h2>
+          <p className="text-slate text-center max-w-2xl mx-auto mb-14 leading-relaxed">
+            We don&apos;t just advise &mdash; we build and run your program with you.
+          </p>
+
+          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            {[
+              {
+                icon: "🎯",
+                title: "End-to-end delivery",
+                desc: "From assessment to implementation, we own the entire program lifecycle — not just a report.",
+              },
+              {
+                icon: "🇲",
+                title: "Ontario expertise",
+                desc: "IPRC, IEP, Reg\u00A0181/98, the five exceptionality categories — we know the framework inside out.",
+              },
+              {
+                icon: "👥",
+                title: "On-site specialists",
+                desc: "Our team works alongside your staff, not from a remote office. Real presence, real results.",
+              },
+              {
+                icon: "⚡",
+                title: "AI-powered design",
+                desc: "Our Program Builder generates a structured draft framework in minutes, accelerating the engagement.",
+              },
+            ].map((item) => (
+              <div
+                key={item.title}
+                className="bg-surface p-6 rounded-2xl border border-border shadow-sm text-center"
+              >
+                <span className="text-[2rem] block mb-3">{item.icon}</span>
+                <h3 className="text-[1rem] font-semibold mb-2">{item.title}</h3>
+                <p className="text-slate text-[0.85rem] leading-relaxed">
+                  {item.desc}
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* Boards served */}
       <section className="py-16 bg-surface">
         <div className="max-w-[1200px] mx-auto px-6 text-center">

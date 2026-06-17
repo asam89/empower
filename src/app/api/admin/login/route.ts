@@ -24,10 +24,11 @@ export async function POST(request: NextRequest) {
 
     const sessionId = await createSession();
 
+    const isProduction = process.env.NODE_ENV === "production";
     const response = NextResponse.json({ success: true });
     response.cookies.set(SESSION_COOKIE, sessionId, {
       httpOnly: true,
-      secure: true,
+      secure: isProduction,
       sameSite: "lax",
       maxAge: 24 * 60 * 60, // 24 hours
       path: "/",

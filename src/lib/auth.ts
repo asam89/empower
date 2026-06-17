@@ -3,12 +3,23 @@ import { cookies } from "next/headers";
 const SESSION_COOKIE = "empower_admin_session";
 const SESSION_DURATION_MS = 24 * 60 * 60 * 1000; // 24 hours
 
-const sessions = new Map<string, { expiresAt: number }>();
+async function hmacSign(data: string, secret: string): Promise<string> {
+  const enc = new TextEncoder();
+  const key = await crypto.subtle.importKey(
+    "raw",
+    enc.encode(secret),
+    { name: "HMAC", hash: "SHA-256" },
+    false,
+    ["sign"]
+  );
+  const sig = await crypto.subtle.sign("HMAC", key, enc.encode(data));
+  return Array.from(new Uint8Array(sig), (b) =>
+    b.toString(16).padStart(2, "0")
+  ).join("");
+}
 
-function generateId(): string {
-  const bytes = new Uint8Array(32);
-  crypto.getRandomValues(bytes);
-  return Array.from(bytes, (b) => b.toString(16).padStart(2, "0")).join("");
+function getSigningSecret(): string {
+  return `${process.env.ADMIN_USERNAME}:${process.env.ADMIN_PASSWORD}:empower-session`;
 }
 
 export async function verifyAdminCredentials(
@@ -29,23 +40,28 @@ export async function verifyAdminCredentials(
 }
 
 export async function createSession(): Promise<string> {
-  const id = generateId();
-  sessions.set(id, { expiresAt: Date.now() + SESSION_DURATION_MS });
-  return id;
+  const expiresAt = Date.now() + SESSION_DURATION_MS;
+  const payload = `${expiresAt}`;
+  const sig = await hmacSign(payload, getSigningSecret());
+  return `${payload}.${sig}`;
 }
 
 export async function isAuthenticated(): Promise<boolean> {
   const cookieStore = await cookies();
-  const sessionId = cookieStore.get(SESSION_COOKIE)?.value;
-  if (!sessionId) return false;
+  const token = cookieStore.get(SESSION_COOKIE)?.value;
+  if (!token) return false;
 
-  const session = sessions.get(sessionId);
-  if (!session) return false;
+  const dotIdx = token.indexOf(".");
+  if (dotIdx === -1) return false;
 
-  if (Date.now() > session.expiresAt) {
-    sessions.delete(sessionId);
-    return false;
-  }
+  const payload = token.substring(0, dotIdx);
+  const sig = token.substring(dotIdx + 1);
+
+  const expectedSig = await hmacSign(payload, getSigningSecret());
+  if (sig !== expectedSig) return false;
+
+  const expiresAt = parseInt(payload, 10);
+  if (isNaN(expiresAt) || Date.now() > expiresAt) return false;
 
   return true;
 }

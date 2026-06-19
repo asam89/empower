@@ -116,13 +116,65 @@ export default function ProgramBuilderPage() {
         body: JSON.stringify(form),
       });
 
-      const data = await res.json();
-
-      if (!res.ok) {
-        throw new Error(data.error || "Failed to generate program. Please try again.");
+      // Non-streaming error responses (validation, rate limit, etc.)
+      const contentType = res.headers.get("content-type") || "";
+      if (contentType.includes("application/json")) {
+        const data = await res.json();
+        if (!res.ok) {
+          throw new Error(data.error || "Failed to generate program. Please try again.");
+        }
+        // Fallback for non-streaming JSON response
+        setPlan(data.plan);
+        setStatus("success");
+        return;
       }
 
-      setPlan(data.plan);
+      if (!res.ok) {
+        throw new Error("Failed to generate program. Please try again.");
+      }
+
+      // Streaming SSE response
+      const reader = res.body?.getReader();
+      if (!reader) throw new Error("No response stream available.");
+
+      const decoder = new TextDecoder();
+      let accumulated = "";
+      let buffer = "";
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split("\n");
+        buffer = lines.pop() || "";
+
+        for (const line of lines) {
+          if (line.startsWith("data: ")) {
+            try {
+              const event = JSON.parse(line.slice(6));
+              if (event.type === "text") {
+                accumulated += event.text;
+                setPlan(accumulated);
+                setStatus("success");
+              } else if (event.type === "error") {
+                throw new Error(event.error || "Stream error.");
+              }
+            } catch (parseErr) {
+              if (parseErr instanceof Error && parseErr.message !== "Stream error.") {
+                // JSON parse error — skip
+              } else {
+                throw parseErr;
+              }
+            }
+          }
+        }
+      }
+
+      if (!accumulated) {
+        throw new Error("AI returned an empty response. Please try again.");
+      }
+
       setStatus("success");
     } catch (err) {
       setStatus("error");

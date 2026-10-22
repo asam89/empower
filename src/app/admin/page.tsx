@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useCallback } from "react";
 
 interface Client {
   id: number;
@@ -88,10 +88,6 @@ export default function AdminPage() {
     }
   }, []);
 
-  useEffect(() => {
-    if (authed) fetchData();
-  }, [authed, fetchData]);
-
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault();
     setLogging(true);
@@ -111,6 +107,7 @@ export default function AdminPage() {
       }
 
       setAuthed(true);
+      fetchData();
     } catch {
       setLoginError("Something went wrong.");
     } finally {

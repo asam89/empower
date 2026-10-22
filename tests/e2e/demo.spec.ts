@@ -25,6 +25,15 @@ test("demo shows the fictional-data banner, noindex and the configured school", 
   await expect(page.getByText("20 of 20")).toBeVisible();
 });
 
+test("navigation switches views without a page load", async ({ page }) => {
+  await unlock(page);
+  await page.getByRole("button", { name: "Students", exact: true }).click();
+  await expect(page.getByRole("heading", { name: "Students" })).toBeVisible();
+  await page.getByRole("button", { name: /Hana K\./ }).click();
+  await expect(page.getByRole("heading", { name: "Hana K." })).toBeVisible();
+  await expect(page).toHaveURL(/view=student&id=hana-k/);
+});
+
 test("the Parent role only ever sees their own child", async ({ page }) => {
   await unlock(page);
   await page.getByRole("button", { name: "Parent", exact: true }).click();

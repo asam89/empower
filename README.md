@@ -86,6 +86,21 @@ npx wrangler pages deploy .vercel/output/static
 
 The site will be available at `empower.pages.dev`. Attach `empower.ca` via Cloudflare DNS later.
 
+## Docker (self-host anywhere)
+
+Runs the app as a standard Node server, with no Cloudflare dependency. It works on any host with Docker: a VPS, the Mac Mini, OCI, or a laptop.
+
+```bash
+cp .env.example .env      # fill in ANTHROPIC_API_KEY and ADMIN_PASSWORD
+docker compose up -d --build
+```
+
+The site is served on `http://localhost:3000`. Set `HOST_PORT` in `.env` to use another port, and put a reverse proxy such as Caddy or nginx in front for HTTPS; the admin cookie is `secure` in production.
+
+The Docker build sets `NEXT_OUTPUT_STANDALONE=1`, which switches Next.js to `output: "standalone"`. The Cloudflare build is unaffected.
+
+**Database:** Docker has no database. Contact leads are only logged, and the admin dashboard shows demo data. Saved leads, intakes and plans need the Cloudflare deployment, which uses D1.
+
 ## Database Schema
 
 See `migrations/0001_initial.sql` for the full schema. Tables:

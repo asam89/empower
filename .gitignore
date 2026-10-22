@@ -43,3 +43,8 @@ next-env.d.ts
 # wrangler local dev
 .dev.vars
 .wrangler
+
+# test output
+/test-results
+/playwright-report
+/blob-report

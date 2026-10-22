@@ -22,6 +22,9 @@ jobs:
       - run: npm ci
       - run: npm run lint
       - run: npx tsc --noEmit
+      - run: npm test
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:e2e
       - run: npx @cloudflare/next-on-pages
 
       - name: Apply D1 migrations

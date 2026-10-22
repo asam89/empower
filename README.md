@@ -99,7 +99,7 @@ The site is served on `http://localhost:3000`. Set `HOST_PORT` in `.env` to use 
 
 The Docker build sets `NEXT_OUTPUT_STANDALONE=1`, which switches Next.js to `output: "standalone"`. The Cloudflare build is unaffected.
 
-**Database:** no database is wired up yet. Contact leads are only logged, and the admin dashboard shows demo data. This is the same on Cloudflare and Docker.
+**Database:** Docker has no database. Contact leads are only logged, and the admin dashboard shows demo data. Saved leads, intakes and plans need the Cloudflare deployment, which uses D1.
 
 ## Database Schema
 

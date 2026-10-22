@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { SYSTEM_PROMPT } from "@/lib/ai-prompt";
 import { checkRateLimit } from "@/lib/rate-limit";
+import { getDB } from "@/lib/db";
+
+const MODEL = "claude-sonnet-4-6";
 
 export const runtime = "edge";
 
@@ -19,6 +22,50 @@ interface IntakePayload {
   goals: string;
   contactEmail: string;
   consent: boolean;
+}
+
+async function saveIntake(body: IntakePayload): Promise<{ clientId: number; intakeId: number } | null> {
+  const db = getDB();
+  if (!db) return null;
+  const client = await db
+    .prepare(
+      `INSERT INTO clients (org_name, org_type, board, contact_email) VALUES (?, ?, ?, ?)
+       ON CONFLICT(contact_email) DO UPDATE SET org_name = excluded.org_name, org_type = excluded.org_type, board = excluded.board
+       RETURNING id`
+    )
+    .bind(body.orgName, body.orgType || null, body.board || null, body.contactEmail)
+    .first<{ id: number }>();
+  if (!client) return null;
+  const intake = await db
+    .prepare(
+      `INSERT INTO intakes (client_id, enrolment_range, grade_range, identified_range, exceptionalities,
+         current_staffing, current_resources, challenges, budget_range, goals)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id`
+    )
+    .bind(
+      client.id,
+      body.enrolmentRange || null,
+      body.gradeRange || null,
+      body.identifiedRange || null,
+      JSON.stringify(body.exceptionalities ?? []),
+      body.currentStaffing || null,
+      body.currentResources || null,
+      body.challenges || null,
+      body.budgetRange || null,
+      body.goals || null
+    )
+    .first<{ id: number }>();
+  if (!intake) return null;
+  return { clientId: client.id, intakeId: intake.id };
+}
+
+async function savePlan(ids: { clientId: number; intakeId: number }, planMd: string) {
+  const db = getDB();
+  if (!db || !planMd.trim()) return;
+  await db
+    .prepare("INSERT INTO program_plans (client_id, intake_id, plan_md, model) VALUES (?, ?, ?, ?)")
+    .bind(ids.clientId, ids.intakeId, planMd, MODEL)
+    .run();
 }
 
 export async function POST(request: NextRequest) {
@@ -79,6 +126,13 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    let saved: { clientId: number; intakeId: number } | null = null;
+    try {
+      saved = await saveIntake(body);
+    } catch (err) {
+      console.error("Failed to save intake:", err);
+    }
+
     const anthropicRes = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
       headers: {
@@ -87,7 +141,7 @@ export async function POST(request: NextRequest) {
         "anthropic-version": "2023-06-01",
       },
       body: JSON.stringify({
-        model: "claude-sonnet-4-6",
+        model: MODEL,
         max_tokens: 8192,
         temperature: 0.4,
         stream: true,
@@ -119,6 +173,7 @@ export async function POST(request: NextRequest) {
         }
 
         let buffer = "";
+        let planMd = "";
 
         try {
           while (true) {
@@ -142,6 +197,7 @@ export async function POST(request: NextRequest) {
                     delta?: { type: string; text?: string };
                   };
                   if (event.type === "content_block_delta" && event.delta?.type === "text_delta" && event.delta.text) {
+                    planMd += event.delta.text;
                     controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: "text", text: event.delta.text })}\n\n`));
                   } else if (event.type === "message_stop") {
                     controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: "done" })}\n\n`));
@@ -163,11 +219,20 @@ export async function POST(request: NextRequest) {
                   delta?: { type: string; text?: string };
                 };
                 if (event.type === "content_block_delta" && event.delta?.type === "text_delta" && event.delta.text) {
+                  planMd += event.delta.text;
                   controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: "text", text: event.delta.text })}\n\n`));
                 }
               } catch {
                 // Skip
               }
+            }
+          }
+
+          if (saved) {
+            try {
+              await savePlan(saved, planMd);
+            } catch (err) {
+              console.error("Failed to save program plan:", err);
             }
           }
 
@@ -180,8 +245,6 @@ export async function POST(request: NextRequest) {
         }
       },
     });
-
-    console.log("Program plan streaming for:", body.orgName, body.contactEmail);
 
     return new Response(stream, {
       headers: {

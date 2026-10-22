@@ -1,9 +1,10 @@
 import { NextResponse } from "next/server";
 import { isAuthenticated } from "@/lib/auth";
+import { getDB } from "@/lib/db";
 
 export const runtime = "edge";
 
-// Demo data for local dev (D1 not available outside Cloudflare)
+// Demo data when no D1 binding is available (next dev, Docker)
 const DEMO_CLIENTS = [
   {
     id: 1,
@@ -78,15 +79,28 @@ export async function GET() {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  // In production with D1, query the database:
-  // const db = getDB();
-  // const clients = await db.prepare("SELECT * FROM clients ORDER BY created_at DESC").all();
-  // etc.
+  const db = getDB();
+  if (!db) {
+    return NextResponse.json({
+      clients: DEMO_CLIENTS,
+      intakes: DEMO_INTAKES,
+      plans: DEMO_PLANS,
+      leads: DEMO_LEADS,
+      demo: true,
+    });
+  }
+
+  const [clients, intakes, plans, leads] = await db.batch([
+    db.prepare("SELECT * FROM clients ORDER BY created_at DESC, id DESC"),
+    db.prepare("SELECT * FROM intakes ORDER BY created_at DESC, id DESC"),
+    db.prepare("SELECT * FROM program_plans ORDER BY created_at DESC, id DESC"),
+    db.prepare("SELECT * FROM leads ORDER BY created_at DESC, id DESC"),
+  ]);
 
   return NextResponse.json({
-    clients: DEMO_CLIENTS,
-    intakes: DEMO_INTAKES,
-    plans: DEMO_PLANS,
-    leads: DEMO_LEADS,
+    clients: clients.results,
+    intakes: intakes.results,
+    plans: plans.results,
+    leads: leads.results,
   });
 }

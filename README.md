@@ -74,6 +74,10 @@ npx wrangler pages secret put ADMIN_PASSWORD
 
 ### 4. Deploy
 
+Merges to `base` deploy automatically via `.github/workflows/deploy.yml` (lint, type-check, build, D1 migrations, `wrangler pages deploy --branch=base`). It needs the `CLOUDFLARE_API_TOKEN` (Pages + D1 edit) and `CLOUDFLARE_ACCOUNT_ID` repo secrets. Pull requests run the same checks without deploying.
+
+Manual deploy:
+
 ```bash
 npm run build
 npx @cloudflare/next-on-pages

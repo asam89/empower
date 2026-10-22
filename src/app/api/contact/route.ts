@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { getDB } from "@/lib/db";
 
 export const runtime = "edge";
 
@@ -38,23 +39,26 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // In production with D1 binding, persist to database:
-    // const db = getDB();
-    // await db.prepare(
-    //   "INSERT INTO leads (name, role, org, email, phone, message, source) VALUES (?, ?, ?, ?, ?, ?, ?)"
-    // ).bind(body.name, body.role, body.org, body.email, body.phone, body.message, "contact_form").run();
-
-    console.log("Lead received:", {
-      name: body.name,
-      role: body.role,
-      org: body.org,
-      email: body.email,
-      phone: body.phone,
-      source: "contact_form",
-    });
+    const db = getDB();
+    if (db) {
+      await db
+        .prepare(
+          "INSERT INTO leads (name, role, org, email, phone, message, source) VALUES (?, ?, ?, ?, ?, ?, ?)"
+        )
+        .bind(body.name, body.role || null, body.org, body.email, body.phone || null, body.message, "contact_form")
+        .run();
+    } else {
+      console.log("Lead received (no database configured):", {
+        name: body.name,
+        org: body.org,
+        email: body.email,
+        source: "contact_form",
+      });
+    }
 
     return NextResponse.json({ success: true });
-  } catch {
+  } catch (err) {
+    console.error("Contact form error:", err);
     return NextResponse.json(
       { error: "Something went wrong. Please try again." },
       { status: 500 }

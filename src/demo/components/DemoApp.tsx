@@ -4,7 +4,10 @@ import { useSearchParams } from "next/navigation";
 import { useDemo } from "../state/useDemo";
 import { ROLE_LABELS, VIEW_LABELS, VIEWS_BY_ROLE, resolveView, visibleStudents, type View } from "../lib/views";
 import type { Role } from "../types";
-import { Overview } from "./views/Overview";
+import { Dashboard } from "./views/Dashboard";
+import { DEMO_TODAY } from "../config/school";
+import { CALENDAR } from "../fixtures/calendar";
+import { ROSTER_FILTERS, applyFilter, isRosterFilter } from "../lib/filters";
 import { Roster } from "./views/Roster";
 import { StudentSummary } from "./views/StudentSummary";
 import { ParentPreview } from "./views/ParentPreview";
@@ -14,9 +17,10 @@ const ROLES: Role[] = ["principal", "sert", "teacher", "parent"];
 
 // Client-side views switched with history.pushState, so navigating never needs
 // the network once the page has loaded.
-function navigate(view: View, id?: string) {
+function navigate(view: View, opts: { id?: string; filter?: string } = {}) {
   const query = new URLSearchParams({ view });
-  if (id) query.set("id", id);
+  if (opts.id) query.set("id", opts.id);
+  if (opts.filter) query.set("filter", opts.filter);
   window.history.pushState(null, "", `/demo?${query.toString()}`);
 }
 
@@ -26,6 +30,8 @@ export function DemoApp() {
   const visible = visibleStudents(state.role, students);
   const { view, studentId } = resolveView(state.role, params.get("view"), params.get("id"), visible);
   const student = studentId ? visible.find((s) => s.id === studentId) : undefined;
+  const rawFilter = params.get("filter");
+  const filter = view === "roster" && isRosterFilter(rawFilter) ? rawFilter : null;
 
   function switchRole(role: Role) {
     setRole(role);
@@ -93,8 +99,23 @@ export function DemoApp() {
         </ul>
       </nav>
 
-      {view === "dashboard" && <Overview school={school} students={students} />}
-      {view === "roster" && <Roster school={school} students={visible} onOpen={(id) => navigate("student", id)} />}
+      {view === "dashboard" && (
+        <Dashboard
+          school={school}
+          students={students}
+          onFilter={(f) => navigate("roster", { filter: f })}
+          onOpenStudent={(id) => navigate("student", { id })}
+        />
+      )}
+      {view === "roster" && (
+        <Roster
+          school={school}
+          students={applyFilter(visible, filter, { today: DEMO_TODAY, cal: CALENDAR })}
+          filterLabel={filter ? ROSTER_FILTERS[filter].label : null}
+          onClearFilter={() => navigate("roster")}
+          onOpen={(id) => navigate("student", { id })}
+        />
+      )}
       {view === "student" && student && <StudentSummary school={school} student={student} />}
       {view === "parent" && student && <ParentPreview student={student} />}
       {view === "pipeline" && <Placeholder title={VIEW_LABELS.pipeline} workstream={4} />}

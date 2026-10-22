@@ -32,10 +32,4 @@ export const PROGRAM: ProgramMetrics = {
     { weekOf: "2027-01-11", views: 57 },
     { weekOf: "2027-01-18", views: 61 },
   ],
-  goalsOnTrackHistory: [
-    { month: "2026-10", percent: 48 },
-    { month: "2026-11", percent: 57 },
-    { month: "2026-12", percent: 63 },
-    { month: "2027-01", percent: 68 },
-  ],
 };

@@ -44,7 +44,7 @@ export function DemoApp() {
         <div className="flex items-center gap-3">
           <span
             aria-hidden="true"
-            className="inline-flex items-center justify-center w-12 h-12 rounded-full text-white font-bold text-[0.85rem]"
+            className="inline-flex items-center justify-center w-12 h-12 shrink-0 rounded-full text-white font-bold text-[0.85rem]"
             style={{ backgroundColor: school.accentColor }}
           >
             {school.crestInitials}

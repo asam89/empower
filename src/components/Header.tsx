@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
+import { Logo } from "@/components/Logo";
 
 const navLinks = [
   { href: "/how-it-works", label: "How It Works" },
@@ -19,9 +20,10 @@ export function Header() {
       <div className="max-w-[1200px] mx-auto px-6 flex items-center justify-between h-[72px]">
         <Link
           href="/"
-          className="text-brand-primary font-bold text-[1.4rem] tracking-tight"
+          aria-label="Empower home"
+          className="text-[1.4rem]"
         >
-          Empower
+          <Logo size={40} />
         </Link>
 
         {/* Desktop nav */}

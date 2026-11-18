@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Logo } from "@/components/Logo";
 
 export function Footer() {
   return (
@@ -6,7 +7,9 @@ export function Footer() {
       <div className="max-w-[1200px] mx-auto px-6">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
           <div>
-            <p className="font-bold text-[1.2rem] text-white mb-3">Empower</p>
+            <p className="text-[1.2rem] mb-3">
+              <Logo size={32} textClassName="text-white" />
+            </p>
             <p className="text-[0.85rem] text-cloud/70 leading-relaxed">
               Special education program consulting for Ontario schools and school
               boards. Structured programs that serve every learner.

@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { requireUser } from "@/lib/auth";
-import { getDB } from "@/lib/db";
+import { requireDB } from "@/lib/db";
 import { createSchool } from "@/app/portal/actions";
 import { Card, Flash, PageTitle, inputClass, labelClass } from "@/components/portal/ui";
 import { SubmitButton } from "@/components/portal/SubmitButton";
@@ -21,7 +21,7 @@ interface SchoolRow {
 export default async function SchoolsPage({ searchParams }: { searchParams: Promise<{ ok?: string; error?: string }> }) {
   const user = await requireUser(["admin", "teacher"]);
   const { ok, error } = await searchParams;
-  const { results: schools } = await getDB()
+  const { results: schools } = await requireDB()
     .prepare(
       `SELECT sc.id, sc.name, sc.board,
               (SELECT COUNT(*) FROM milestones m WHERE m.school_id = sc.id) AS total,

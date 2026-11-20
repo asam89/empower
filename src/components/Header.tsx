@@ -5,6 +5,7 @@ import { useState } from "react";
 import { Logo } from "@/components/Logo";
 
 const navLinks = [
+  { href: "/private-schools", label: "Private Schools" },
   { href: "/how-it-works", label: "How It Works" },
   { href: "/services", label: "Services" },
   { href: "/program-builder", label: "Program Builder" },
@@ -27,25 +28,25 @@ export function Header() {
         </Link>
 
         {/* Desktop nav */}
-        <nav aria-label="Main navigation" className="hidden md:flex items-center gap-6">
+        <nav aria-label="Main navigation" className="hidden xl:flex items-center gap-5">
           {navLinks.map((link) => (
             <Link
               key={link.href}
               href={link.href}
-              className="text-slate text-[0.9rem] font-medium hover:text-brand-primary transition-colors"
+              className="text-slate text-[0.88rem] font-medium whitespace-nowrap hover:text-brand-primary transition-colors"
             >
               {link.label}
             </Link>
           ))}
           <Link
             href="/login"
-            className="text-slate text-[0.9rem] font-medium hover:text-brand-primary transition-colors"
+            className="text-slate text-[0.88rem] font-medium whitespace-nowrap hover:text-brand-primary transition-colors"
           >
             Portal
           </Link>
           <Link
             href="/program-builder"
-            className="ml-2 inline-flex items-center px-5 py-2.5 bg-brand-accent text-white text-[0.85rem] font-semibold rounded-xl hover:bg-brand-accent/90 transition-colors"
+            className="ml-1 inline-flex items-center whitespace-nowrap px-5 py-2.5 bg-brand-accent text-white text-[0.85rem] font-semibold rounded-xl hover:bg-brand-accent/90 transition-colors"
           >
             Build Your Program
           </Link>
@@ -56,7 +57,7 @@ export function Header() {
           type="button"
           aria-label={mobileOpen ? "Close menu" : "Open menu"}
           aria-expanded={mobileOpen}
-          className="md:hidden p-2 text-ink"
+          className="xl:hidden p-2 text-ink"
           onClick={() => setMobileOpen(!mobileOpen)}
         >
           <svg
@@ -90,7 +91,7 @@ export function Header() {
       {mobileOpen && (
         <nav
           aria-label="Mobile navigation"
-          className="md:hidden bg-surface border-t border-border px-6 py-4"
+          className="xl:hidden bg-surface border-t border-border px-6 py-4"
         >
           <ul className="flex flex-col gap-3">
             {navLinks.map((link) => (

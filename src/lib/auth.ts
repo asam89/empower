@@ -1,6 +1,6 @@
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-import { getDB } from "@/lib/db";
+import { requireDB } from "@/lib/db";
 
 export const SESSION_COOKIE = "empower_session";
 const SESSION_DURATION_MS = 14 * 24 * 60 * 60 * 1000; // 14 days
@@ -39,7 +39,7 @@ async function hashToken(token: string): Promise<string> {
 /** Creates a session row and returns the raw token to store in the cookie. */
 export async function createSession(userId: number): Promise<{ token: string; maxAge: number }> {
   const token = randomToken();
-  const db = getDB();
+  const db = requireDB();
   await db
     .prepare("INSERT INTO sessions (id, user_id, expires_at) VALUES (?, ?, ?)")
     .bind(await hashToken(token), userId, Date.now() + SESSION_DURATION_MS)
@@ -51,13 +51,13 @@ export async function createSession(userId: number): Promise<{ token: string; ma
 
 export async function destroySession(token: string | undefined): Promise<void> {
   if (!token) return;
-  await getDB().prepare("DELETE FROM sessions WHERE id = ?").bind(await hashToken(token)).run();
+  await requireDB().prepare("DELETE FROM sessions WHERE id = ?").bind(await hashToken(token)).run();
 }
 
 export async function getCurrentUser(): Promise<User | null> {
   const token = (await cookies()).get(SESSION_COOKIE)?.value;
   if (!token) return null;
-  const row = await getDB()
+  const row = await requireDB()
     .prepare(
       `SELECT u.id, u.email, u.name, u.picture, u.role
          FROM sessions s JOIN users u ON u.id = s.user_id

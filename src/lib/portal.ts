@@ -1,4 +1,4 @@
-import { getDB } from "@/lib/db";
+import { requireDB } from "@/lib/db";
 import type { Role, User } from "@/lib/auth";
 
 export interface Student {
@@ -66,7 +66,7 @@ const STUDENT_COLS = `s.id, s.school_id, sc.name AS school_name, s.first_name, s
 
 /** Students the user may see: admins see all, teachers their assigned students, parents their children. */
 export async function listStudents(user: User, includeArchived = false): Promise<Student[]> {
-  const db = getDB();
+  const db = requireDB();
   const archived = includeArchived ? "" : "AND s.archived = 0";
   let sql: string;
   let binds: unknown[] = [];
@@ -93,7 +93,7 @@ export type Access = "admin" | "staff" | "guardian";
 /** How the user relates to a student, or null when they may not see it. */
 export async function studentAccess(user: User, studentId: number): Promise<Access | null> {
   if (user.role === "admin") return "admin";
-  const db = getDB();
+  const db = requireDB();
   const staff = await db
     .prepare("SELECT 1 AS ok FROM student_staff WHERE student_id = ? AND user_id = ?")
     .bind(studentId, user.id)
@@ -112,7 +112,7 @@ export async function studentAccess(user: User, studentId: number): Promise<Acce
 export const canEdit = (access: Access | null) => access === "admin" || access === "staff";
 
 export async function getStudent(id: number): Promise<Student | null> {
-  return getDB()
+  return requireDB()
     .prepare(`SELECT ${STUDENT_COLS} FROM students s LEFT JOIN schools sc ON sc.id = s.school_id WHERE s.id = ?`)
     .bind(id)
     .first<Student>();
@@ -123,7 +123,7 @@ const UPDATE_COLS = `up.id, up.student_id, up.author_id, u.name AS author_name, 
 
 export async function listUpdates(studentId: number, access: Access): Promise<UpdateRow[]> {
   const parentsOnly = access === "guardian" ? "AND up.visibility = 'parents'" : "";
-  const { results } = await getDB()
+  const { results } = await requireDB()
     .prepare(
       `SELECT ${UPDATE_COLS} FROM updates up JOIN users u ON u.id = up.author_id
         WHERE up.student_id = ? ${parentsOnly} ORDER BY up.created_at DESC, up.id DESC LIMIT 200`
@@ -135,7 +135,7 @@ export async function listUpdates(studentId: number, access: Access): Promise<Up
 
 export async function listComments(updateIds: number[]): Promise<CommentRow[]> {
   if (updateIds.length === 0) return [];
-  const { results } = await getDB()
+  const { results } = await requireDB()
     .prepare(
       `SELECT c.id, c.update_id, c.author_id, u.name AS author_name, u.email AS author_email,
               u.role AS author_role, c.body, c.created_at
@@ -154,7 +154,7 @@ export async function recentUpdates(user: User, limit = 10): Promise<(UpdateRow 
   if (students.length === 0) return [];
   const ids = students.map((s) => s.id);
   const parentsOnly = user.role === "parent" ? "AND up.visibility = 'parents'" : "";
-  const { results } = await getDB()
+  const { results } = await requireDB()
     .prepare(
       `SELECT ${UPDATE_COLS}, s.first_name, s.last_initial
          FROM updates up JOIN users u ON u.id = up.author_id JOIN students s ON s.id = up.student_id
@@ -167,7 +167,7 @@ export async function recentUpdates(user: User, limit = 10): Promise<(UpdateRow 
 }
 
 export async function listSchools(): Promise<School[]> {
-  const { results } = await getDB().prepare("SELECT id, name, board FROM schools ORDER BY name").all<School>();
+  const { results } = await requireDB().prepare("SELECT id, name, board FROM schools ORDER BY name").all<School>();
   return results;
 }
 

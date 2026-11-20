@@ -1,0 +1,78 @@
+name: Nightly database backup
+
+# Full export of the production D1 database, every night and on demand.
+#
+# This repository is public, so the backup is ENCRYPTED (AES-256, passphrase
+# from the BACKUP_PASSPHRASE secret) before it is stored as a workflow
+# artifact. The job fails rather than store an unencrypted copy.
+# If R2 is enabled and the R2_BUCKET repository variable is set, the
+# encrypted file is also uploaded to that R2 bucket.
+
+on:
+  schedule:
+    - cron: "17 7 * * *" # 07:17 UTC, about 2am in Toronto
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: database-backup
+  cancel-in-progress: false
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check the encryption passphrase is set
+        env:
+          BACKUP_PASSPHRASE: ${{ secrets.BACKUP_PASSPHRASE }}
+        run: |
+          if [ -z "$BACKUP_PASSPHRASE" ]; then
+            echo "::error::Add a BACKUP_PASSPHRASE repository secret. Backups are never stored unencrypted."
+            exit 1
+          fi
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Export the database
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          STAMP=$(date -u +%Y%m%d-%H%M)
+          echo "STAMP=$STAMP" >> "$GITHUB_ENV"
+          npx --yes wrangler@4.101.0 d1 export empower-db --remote --output="backup.sql"
+          gzip -9 backup.sql
+          echo "Exported $(stat -c%s backup.sql.gz) bytes (compressed)"
+
+      - name: Encrypt
+        env:
+          BACKUP_PASSPHRASE: ${{ secrets.BACKUP_PASSPHRASE }}
+        run: |
+          OUT="empower-backup-${STAMP}.sql.gz.gpg"
+          printf '%s' "$BACKUP_PASSPHRASE" | gpg --batch --yes --pinentry-mode loopback --passphrase-fd 0 \
+            --symmetric --cipher-algo AES256 --output "$OUT" backup.sql.gz
+          shred -u backup.sql.gz
+          echo "OUT=$OUT" >> "$GITHUB_ENV"
+
+      - name: Store as a workflow artifact (30 days)
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.OUT }}
+          path: ${{ env.OUT }}
+          retention-days: 30
+          if-no-files-found: error
+
+      - name: Upload to R2
+        if: ${{ vars.R2_BUCKET != '' }}
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: auto
+          R2_ENDPOINT: ${{ secrets.R2_ENDPOINT }}
+        run: aws s3 cp "$OUT" "s3://${{ vars.R2_BUCKET }}/d1/$OUT" --endpoint-url "$R2_ENDPOINT"

@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { requireUser } from "@/lib/auth";
-import { getDB } from "@/lib/db";
+import { requireDB } from "@/lib/db";
 import { displayName, formatDate } from "@/lib/portal";
 import { changeRole, inviteStaff, setUserDisabled } from "@/app/portal/actions";
 import { Avatar, Badge, Card, Flash, PageTitle, inputClass, labelClass, linkButtonClass } from "@/components/portal/ui";
@@ -27,7 +27,7 @@ export default async function TeamPage({
   const user = await requireUser(["admin"]);
   const { ok, error, show } = await searchParams;
   const showParents = show === "parents";
-  const { results: members } = await getDB()
+  const { results: members } = await requireDB()
     .prepare(
       `SELECT u.id, u.email, u.name, u.role, u.disabled, u.last_login_at,
               CASE WHEN u.role = 'parent'

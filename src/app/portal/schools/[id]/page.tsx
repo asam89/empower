@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { requireUser } from "@/lib/auth";
-import { getDB } from "@/lib/db";
+import { requireDB } from "@/lib/db";
 import { formatDate } from "@/lib/portal";
 import { createMilestone, deleteMilestone, setMilestoneStatus } from "@/app/portal/actions";
 import { Badge, Card, Flash, PageTitle, inputClass, labelClass, linkButtonClass } from "@/components/portal/ui";
@@ -36,7 +36,7 @@ export default async function SchoolPage({
   const user = await requireUser(["admin", "teacher"]);
   const id = Number((await params).id);
   const { ok, error } = await searchParams;
-  const db = getDB();
+  const db = requireDB();
   const school = Number.isInteger(id)
     ? await db.prepare("SELECT id, name, board FROM schools WHERE id = ?").bind(id).first<{ id: number; name: string; board: string | null }>()
     : null;

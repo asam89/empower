@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { requireUser } from "@/lib/auth";
-import { getDB } from "@/lib/db";
+import { requireDB } from "@/lib/db";
 import {
   canEdit,
   categoryLabel,
@@ -62,7 +62,7 @@ export default async function StudentPage({
   const student = await getStudent(id);
   if (!student) notFound();
   const editor = canEdit(access);
-  const db = getDB();
+  const db = requireDB();
 
   const [updates, guardians, staff, teachers] = await Promise.all([
     listUpdates(id, access),

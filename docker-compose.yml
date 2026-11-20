@@ -1,0 +1,10 @@
+services:
+  web:
+    build: .
+    image: empower:latest
+    restart: unless-stopped
+    ports:
+      - "${HOST_PORT:-3000}:3000"
+    env_file: .env
+    environment:
+      PORT: "3000"

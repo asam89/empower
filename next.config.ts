@@ -8,6 +8,7 @@ if (process.env.NODE_ENV === "development" && process.env.USE_LOCAL_D1 === "1") 
 }
 
 const nextConfig: NextConfig = {
+  ...(process.env.NEXT_OUTPUT_STANDALONE === "1" ? { output: "standalone" } : {}),
   eslint: {
     ignoreDuringBuilds: true,
   },

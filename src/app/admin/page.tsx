@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 
 interface Client {
   id: number;
@@ -76,6 +76,7 @@ export default function AdminPage() {
         setAuthed(false);
         return;
       }
+      setAuthed(true);
       const data = await res.json();
       setClients(data.clients || []);
       setIntakes(data.intakes || []);
@@ -87,6 +88,17 @@ export default function AdminPage() {
       setLoading(false);
     }
   }, []);
+
+  // Already signed in (Google admin or an earlier password session)? Skip the login form.
+  useEffect(() => {
+    let active = true;
+    fetch("/api/admin/clients").then((res) => {
+      if (active && res.ok) fetchData();
+    });
+    return () => {
+      active = false;
+    };
+  }, [fetchData]);
 
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault();
@@ -197,6 +209,12 @@ export default function AdminPage() {
                 {logging ? "Signing in\u2026" : "Sign In"}
               </button>
             </form>
+            <a
+              href="/api/auth/google?next=/admin"
+              className="mt-3 w-full inline-flex items-center justify-center py-3 border border-border rounded-xl text-ink font-semibold text-[0.9rem] hover:border-brand-primary transition"
+            >
+              Sign in with Google instead
+            </a>
             <p className="text-[0.78rem] text-slate mt-4 text-center">
               Admin credentials are set via environment variables
               (ADMIN_USERNAME, ADMIN_PASSWORD).

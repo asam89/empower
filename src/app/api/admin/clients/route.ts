@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
-import { isAuthenticated } from "@/lib/auth";
+import { getCurrentUser } from "@/lib/auth";
+import { isAdminPasswordAuthenticated } from "@/lib/admin-password";
 import { getDB } from "@/lib/db";
 
 export const runtime = "edge";
@@ -74,7 +75,10 @@ const DEMO_LEADS = [
 ];
 
 export async function GET() {
-  const authed = await isAuthenticated();
+  // Either the legacy admin password session or a Google-signed-in portal admin.
+  const authed =
+    (await isAdminPasswordAuthenticated()) ||
+    (getDB() !== null && (await getCurrentUser())?.role === "admin");
   if (!authed) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }

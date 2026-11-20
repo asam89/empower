@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { verifyAdminCredentials, createSession, SESSION_COOKIE } from "@/lib/auth";
+import { verifyAdminCredentials, createAdminPasswordSession, ADMIN_PASSWORD_COOKIE } from "@/lib/admin-password";
 
 export const runtime = "edge";
 
@@ -22,11 +22,11 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const sessionId = await createSession();
+    const sessionId = await createAdminPasswordSession();
 
     const isProduction = process.env.NODE_ENV === "production";
     const response = NextResponse.json({ success: true });
-    response.cookies.set(SESSION_COOKIE, sessionId, {
+    response.cookies.set(ADMIN_PASSWORD_COOKIE, sessionId, {
       httpOnly: true,
       secure: isProduction,
       sameSite: "lax",

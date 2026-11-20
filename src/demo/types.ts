@@ -416,6 +416,4 @@ export interface ProgramMetrics {
   specialistHoursUsed: Record<string, number>;
   /** Parent hub views per week (sample data). */
   parentPortalViews: { weekOf: string; views: number }[];
-  /** Goals on track at the end of each month this term (sample history). */
-  goalsOnTrackHistory: { month: string; percent: number }[];
 }

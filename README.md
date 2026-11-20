@@ -13,7 +13,7 @@ A special education consultancy website and AI Program Builder for Ontario schoo
 - `/privacy` — Privacy policy
 - `/login` — Google sign-in for staff and families
 - `/portal` — Family & educator portal (see below)
-- `/admin` — Leads & program-builder clients (admins only)
+- `/admin` — Leads & program-builder clients. Sign in with the `ADMIN_USERNAME`/`ADMIN_PASSWORD` login or as a portal admin via Google
 
 ## Tech Stack
 
@@ -32,8 +32,11 @@ A special education consultancy website and AI Program Builder for Ontario schoo
 # Install dependencies
 npm install
 
-# Run dev server
+# Run dev server (no database: public site, demo, and /admin with sample data)
 npm run dev
+
+# Run dev server with a local D1 database (needed for /portal)
+npm run dev:d1
 ```
 
 The app runs at `http://localhost:3000`. The AI Program Builder requires an `ANTHROPIC_API_KEY` environment variable (see below).
@@ -47,15 +50,17 @@ ANTHROPIC_API_KEY=sk-ant-...
 GOOGLE_CLIENT_ID=....apps.googleusercontent.com
 GOOGLE_CLIENT_SECRET=...
 ADMIN_EMAILS=you@yourdomain.com
+ADMIN_USERNAME=admin
+ADMIN_PASSWORD=your-secure-password
 ```
 
-Then create the local database once:
+Before the first `npm run dev:d1`, create the local database:
 
 ```bash
 npx wrangler d1 migrations apply empower-db --local
 ```
 
-In `npm run dev`, the login page also shows **dev sign-in links** (admin / teacher / parent) so you can try every role without Google. That route returns 404 in production builds.
+In `npm run dev:d1`, the login page also shows **dev sign-in links** (admin / teacher / parent) so you can try every role without Google. That route returns 404 in production builds.
 
 > **Never commit `.env.local` or any file containing secrets.**
 
@@ -86,6 +91,10 @@ npx wrangler pages secret put APP_URL   # e.g. https://empower.ca (optional; def
 ```
 
 ### 4. Deploy
+
+Merges to `base` deploy automatically via `.github/workflows/deploy.yml` (lint, type-check, build, D1 migrations, `wrangler pages deploy --branch=base`). It needs the `CLOUDFLARE_API_TOKEN` (Pages + D1 edit) and `CLOUDFLARE_ACCOUNT_ID` repo secrets. Pull requests run the same checks without deploying.
+
+Manual deploy:
 
 ```bash
 npm run build

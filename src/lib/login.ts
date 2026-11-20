@@ -1,4 +1,4 @@
-import { getDB, envVar } from "@/lib/db";
+import { requireDB, envVar } from "@/lib/db";
 import type { GoogleIdentity } from "@/lib/google";
 import { audit } from "@/lib/audit";
 
@@ -8,7 +8,7 @@ import { audit } from "@/lib/audit";
  * listed in the ADMIN_EMAILS setting for bootstrapping the first admins.
  */
 export async function resolveUser(identity: GoogleIdentity): Promise<number | null> {
-  const db = getDB();
+  const db = requireDB();
 
   const bySub = await db
     .prepare("SELECT id, disabled FROM users WHERE google_sub = ?")

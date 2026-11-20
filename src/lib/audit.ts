@@ -1,4 +1,4 @@
-import { getDB } from "@/lib/db";
+import { requireDB } from "@/lib/db";
 
 export async function audit(
   userId: number | null,
@@ -7,7 +7,7 @@ export async function audit(
   entityId?: number | null
 ): Promise<void> {
   try {
-    await getDB()
+    await requireDB()
       .prepare("INSERT INTO audit_log (user_id, action, entity, entity_id) VALUES (?, ?, ?, ?)")
       .bind(userId, action, entity ?? null, entityId ?? null)
       .run();

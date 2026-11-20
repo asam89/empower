@@ -13,6 +13,7 @@ A special education consultancy website and AI Program Builder for Ontario schoo
 - `/privacy` — Privacy policy
 - `/login` — Google sign-in for staff and families
 - `/portal` — Family & educator portal (see below)
+- `/portal/backups` — Database backups (admins only)
 - `/admin` — Leads & program-builder clients. Sign in with the `ADMIN_USERNAME`/`ADMIN_PASSWORD` login or as a portal admin via Google
 
 ## Tech Stack
@@ -143,6 +144,34 @@ Sign-in is **Google only** and **invite-only**: an email can sign in only after 
    - `https://empower-c9l.pages.dev/api/auth/google/callback`
    - `http://localhost:3000/api/auth/google/callback` (local dev)
 4. Save the client ID and secret as the `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` secrets, set `ADMIN_EMAILS`, and redeploy.
+
+## Backups
+
+**From the admin portal:** `/portal/backups` (admins only) shows what's in the database and has a **Download backup** button. It returns a data-only `.sql` file of every table except sign-in sessions. Every download is recorded in the audit log and listed on that page.
+
+**Nightly:** `.github/workflows/backup.yml` runs a full `wrangler d1 export` every night (07:17 UTC) and on demand (**Actions → Nightly database backup → Run workflow**). This repository is public, so each export is **encrypted with AES-256** before it is stored as a workflow artifact for 30 days. The job refuses to run without a passphrase.
+
+| Setting (GitHub → Settings → Secrets and variables → Actions) | Purpose |
+|---|---|
+| `BACKUP_PASSPHRASE` secret | **Required.** Encryption passphrase. Keep a copy somewhere safe: backups can't be opened without it. |
+| `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID` secrets | Already used by the deploy job. |
+| `R2_BUCKET` variable + `R2_ENDPOINT`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY` secrets | Optional. Also uploads each encrypted backup to R2 (enable R2 in the Cloudflare dashboard first). `R2_ENDPOINT` is `https://<account-id>.r2.cloudflarestorage.com`. |
+
+Decrypt a nightly backup:
+
+```bash
+gpg --decrypt empower-backup-YYYYMMDD-HHMM.sql.gz.gpg | gunzip > backup.sql
+```
+
+**Restore** (test on a new database first; restoring overwrites data):
+
+```bash
+# Nightly export (schema + data) into a fresh, empty database:
+npx wrangler d1 execute <new-db-name> --remote --file=backup.sql
+
+# Portal download (data only) into a database that already has the migrations applied:
+npx wrangler d1 execute empower-db --remote --file=empower-backup-YYYYMMDD-HHMM.sql
+```
 
 ## Design System
 

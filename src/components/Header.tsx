@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
+import { Logo } from "@/components/Logo";
 
 const navLinks = [
   { href: "/how-it-works", label: "How It Works" },
@@ -19,9 +20,10 @@ export function Header() {
       <div className="max-w-[1200px] mx-auto px-6 flex items-center justify-between h-[72px]">
         <Link
           href="/"
-          className="text-brand-primary font-bold text-[1.4rem] tracking-tight"
+          aria-label="Empower home"
+          className="text-[1.4rem]"
         >
-          Empower
+          <Logo size={40} />
         </Link>
 
         {/* Desktop nav */}
@@ -35,6 +37,12 @@ export function Header() {
               {link.label}
             </Link>
           ))}
+          <Link
+            href="/login"
+            className="text-slate text-[0.9rem] font-medium hover:text-brand-primary transition-colors"
+          >
+            Portal
+          </Link>
           <Link
             href="/program-builder"
             className="ml-2 inline-flex items-center px-5 py-2.5 bg-brand-accent text-white text-[0.85rem] font-semibold rounded-xl hover:bg-brand-accent/90 transition-colors"
@@ -96,6 +104,15 @@ export function Header() {
                 </Link>
               </li>
             ))}
+            <li>
+              <Link
+                href="/login"
+                className="block text-slate text-[0.95rem] font-medium py-2 hover:text-brand-primary"
+                onClick={() => setMobileOpen(false)}
+              >
+                Portal
+              </Link>
+            </li>
             <li>
               <Link
                 href="/program-builder"

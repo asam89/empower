@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
+import Anthropic from "@anthropic-ai/sdk";
 import { SYSTEM_PROMPT } from "@/lib/ai-prompt";
 import { checkRateLimit } from "@/lib/rate-limit";
+import { envVar, getDB } from "@/lib/db";
+
+const MODEL = "claude-sonnet-4-6";
 
 export const runtime = "edge";
 
@@ -53,6 +57,41 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Save the school and its intake first, so the lead is kept even if generation fails.
+    const db = getDB();
+    const clean = (v: unknown, max = 2000) => (typeof v === "string" ? v.trim().slice(0, max) : "") || null;
+    const client = await db
+      .prepare(
+        `INSERT INTO clients (org_name, org_type, board, contact_email)
+         VALUES (?, ?, ?, ?)
+         ON CONFLICT(contact_email) DO UPDATE SET
+           org_name = excluded.org_name,
+           org_type = COALESCE(excluded.org_type, clients.org_type),
+           board = COALESCE(excluded.board, clients.board)
+         RETURNING id`
+      )
+      .bind(clean(body.orgName, 200), clean(body.orgType, 40), clean(body.board, 40), body.contactEmail.trim().toLowerCase())
+      .first<{ id: number }>();
+    const intake = await db
+      .prepare(
+        `INSERT INTO intakes (client_id, enrolment_range, grade_range, identified_range, exceptionalities,
+           current_staffing, current_resources, challenges, budget_range, goals)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id`
+      )
+      .bind(
+        client!.id,
+        clean(body.enrolmentRange, 40),
+        clean(body.gradeRange, 40),
+        clean(body.identifiedRange, 40),
+        JSON.stringify(Array.isArray(body.exceptionalities) ? body.exceptionalities.slice(0, 20).map(String) : []),
+        clean(body.currentStaffing),
+        clean(body.currentResources),
+        clean(body.challenges),
+        clean(body.budgetRange, 40),
+        clean(body.goals)
+      )
+      .first<{ id: number }>();
+
     // Build the user message for Claude
     const userMessage = `School Profile for Program Framework Generation:
 
@@ -69,8 +108,7 @@ export async function POST(request: NextRequest) {
 - Budget Range: ${body.budgetRange || "Not specified"}
 - Primary Goals: ${body.goals || "Not specified"}`;
 
-    // Call Anthropic API
-    const apiKey = process.env.ANTHROPIC_API_KEY;
+    const apiKey = envVar("ANTHROPIC_API_KEY");
     if (!apiKey) {
       console.error("ANTHROPIC_API_KEY is not configured");
       return NextResponse.json(
@@ -79,37 +117,39 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const anthropicRes = await fetch("https://api.anthropic.com/v1/messages", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "x-api-key": apiKey,
-        "anthropic-version": "2023-06-01",
-      },
-      body: JSON.stringify({
-        model: "claude-sonnet-4-6-20250514",
-        max_tokens: 8192,
-        temperature: 0.4,
+    const anthropic = new Anthropic({ apiKey });
+    let aiResult: Anthropic.Message;
+    try {
+      aiResult = await anthropic.messages.create({
+        model: MODEL,
+        max_tokens: 16000,
         system: SYSTEM_PROMPT,
         messages: [{ role: "user", content: userMessage }],
-      }),
-    });
-
-    if (!anthropicRes.ok) {
-      const errText = await anthropicRes.text();
-      console.error("Anthropic API error:", anthropicRes.status, errText);
+      });
+    } catch (err) {
+      if (err instanceof Anthropic.RateLimitError) {
+        console.error("Anthropic rate limit:", err.message);
+      } else if (err instanceof Anthropic.APIError) {
+        console.error(`Anthropic API error ${err.status}:`, err.message);
+      } else {
+        console.error("Anthropic request failed:", err);
+      }
       return NextResponse.json(
         { error: "Failed to generate program framework. Please try again." },
         { status: 502 }
       );
     }
 
-    const aiResult = (await anthropicRes.json()) as {
-      content: Array<{ type: string; text: string }>;
-      model: string;
-    };
-    const planMd =
-      aiResult.content.find((c) => c.type === "text")?.text || "";
+    if (aiResult.stop_reason === "refusal") {
+      return NextResponse.json(
+        { error: "We couldn't generate a framework for this request. Please contact us and we'll help directly." },
+        { status: 502 }
+      );
+    }
+    const planMd = aiResult.content
+      .flatMap((block) => (block.type === "text" ? [block.text] : []))
+      .join("\n")
+      .trim();
 
     if (!planMd) {
       return NextResponse.json(
@@ -118,11 +158,10 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // In production with D1, persist to database:
-    // const db = getDB();
-    // ... create/find client, insert intake, insert program_plan
-
-    console.log("Program plan generated for:", body.orgName, body.contactEmail);
+    await db
+      .prepare("INSERT INTO program_plans (client_id, intake_id, plan_md, model) VALUES (?, ?, ?, ?)")
+      .bind(client!.id, intake!.id, planMd, aiResult.model)
+      .run();
 
     return NextResponse.json({
       success: true,

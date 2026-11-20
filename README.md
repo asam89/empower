@@ -22,7 +22,7 @@ A special education consultancy website and AI Program Builder for Ontario schoo
 | Framework | Next.js 15 (App Router) |
 | Hosting | Cloudflare Pages via `@cloudflare/next-on-pages` |
 | Database | Cloudflare D1 (SQLite) |
-| AI | Anthropic Claude API (`claude-sonnet-4-6`) |
+| AI | Anthropic Claude API via `@anthropic-ai/sdk` (`claude-sonnet-4-6`) |
 | Styling | Tailwind CSS v4 with custom design tokens |
 | Font | Lexend (Google Fonts) |
 

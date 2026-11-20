@@ -116,13 +116,13 @@ export default function ProgramBuilderPage() {
         body: JSON.stringify(form),
       });
 
-      const data = await res.json();
+      const data = (await res.json()) as { plan?: string; error?: string };
 
       if (!res.ok) {
         throw new Error(data.error || "Failed to generate program. Please try again.");
       }
 
-      setPlan(data.plan);
+      setPlan(data.plan ?? "");
       setStatus("success");
     } catch (err) {
       setStatus("error");

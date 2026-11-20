@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { isAuthenticated } from "@/lib/auth";
+import { getCurrentUser } from "@/lib/auth";
 
 export const runtime = "edge";
 
@@ -73,8 +73,8 @@ const DEMO_LEADS = [
 ];
 
 export async function GET() {
-  const authed = await isAuthenticated();
-  if (!authed) {
+  const user = await getCurrentUser();
+  if (!user || user.role !== "admin") {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

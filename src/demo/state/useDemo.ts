@@ -19,7 +19,8 @@ export function useDemo() {
     school,
     students,
     requests,
-    setRole: (role: Role) => updateDemoState((s) => ({ ...s, role })),
+    setRole: (role: Role) => updateDemoState((s) => ({ ...s, role, roleChosen: true })),
+    signOut: () => updateDemoState((s) => ({ ...s, roleChosen: false })),
     reset: resetDemo,
     addPoint: (goalId: string, point: ProgressPoint) =>
       updateDemoState((s) => ({

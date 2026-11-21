@@ -2,7 +2,7 @@
 
 import { useSearchParams } from "next/navigation";
 import { useDemo } from "../state/useDemo";
-import { ROLE_LABELS, VIEW_LABELS, VIEWS_BY_ROLE, resolveView, visibleStudents, type View } from "../lib/views";
+import { VIEW_LABELS, VIEWS_BY_ROLE, resolveView, visibleStudents, type View } from "../lib/views";
 import type { Role } from "../types";
 import { Dashboard } from "./views/Dashboard";
 import { DEMO_TODAY } from "../config/school";
@@ -13,9 +13,10 @@ import { StudentSummary } from "./views/StudentSummary";
 import { ParentHub } from "./views/ParentHub";
 import { FamilyRequests } from "./views/FamilyRequests";
 import { openRequestCount } from "../lib/requests";
+import { PERSONAS } from "../lib/personas";
+import { RoleChooser } from "./RoleChooser";
+import { Avatar } from "./Avatar";
 import { Placeholder } from "./views/Placeholder";
-
-const ROLES: Role[] = ["principal", "sert", "teacher", "parent"];
 
 // Client-side views switched with history.pushState, so navigating never needs
 // the network once the page has loaded.
@@ -28,7 +29,8 @@ function navigate(view: View, opts: { id?: string; filter?: string } = {}) {
 
 export function DemoApp() {
   const params = useSearchParams();
-  const { state, school, students, requests, setRole, reset, addPoint, addMessage, addRequest, updateRequest } = useDemo();
+  const { state, school, students, requests, setRole, signOut, reset, addPoint, addMessage, addRequest, updateRequest } = useDemo();
+  const persona = PERSONAS[state.role];
   const openRequests = openRequestCount(requests);
   const visible = visibleStudents(state.role, students);
   const { view, studentId } = resolveView(state.role, params.get("view"), params.get("id"), visible);
@@ -44,7 +46,7 @@ export function DemoApp() {
   function handleReset() {
     if (!window.confirm("Reset the demo? All changes made in this session will be cleared.")) return;
     reset();
-    navigate("dashboard");
+    window.history.pushState(null, "", "/demo");
   }
 
   return (
@@ -66,25 +68,39 @@ export function DemoApp() {
           </div>
         </div>
         <div className="flex flex-wrap items-center gap-3">
-          <div role="group" aria-label="View the demo as" className="inline-flex rounded-lg border border-border bg-surface p-1">
-            {ROLES.map((role) => (
+          {state.roleChosen && (
+            <div data-testid="signed-in-as" className="flex items-center gap-3 bg-surface border border-border rounded-xl pl-2 pr-1 py-1">
+              <Avatar name={persona.name} color={persona.group === "family" ? "#FF8A3D" : school.accentColor} size={34} />
+              <div className="leading-tight">
+                <p className="text-[0.72rem] text-slate">Signed in as</p>
+                <p className="text-[0.88rem] font-semibold text-ink">
+                  {persona.name} · {persona.title}
+                </p>
+              </div>
               <button
-                key={role}
                 type="button"
-                aria-pressed={state.role === role}
-                onClick={() => switchRole(role)}
-                className={`px-3 py-1.5 rounded-md text-[0.85rem] font-semibold ${state.role === role ? "bg-brand-primary text-white" : "text-slate hover:text-ink"}`}
+                onClick={() => {
+                  signOut();
+                  window.history.pushState(null, "", "/demo");
+                }}
+                className="ml-2 px-3 py-1.5 rounded-lg bg-cloud border border-border text-[0.82rem] font-semibold text-brand-primary hover:border-brand-primary"
               >
-                {ROLE_LABELS[role]}
+                Switch role
               </button>
-            ))}
-          </div>
-          <button type="button" onClick={handleReset} className="px-3 py-1.5 rounded-lg border border-border bg-surface text-[0.85rem] font-semibold text-slate hover:text-ink">
-            Reset demo
-          </button>
+            </div>
+          )}
+          {state.roleChosen && (
+            <button type="button" onClick={handleReset} className="px-3 py-1.5 rounded-lg border border-border bg-surface text-[0.85rem] font-semibold text-slate hover:text-ink">
+              Reset demo
+            </button>
+          )}
         </div>
       </div>
 
+      {!state.roleChosen ? (
+        <RoleChooser school={school} onChoose={switchRole} />
+      ) : (
+      <>
       <nav aria-label="Demo sections" className="mb-6">
         <ul className="flex flex-wrap gap-2">
           {VIEWS_BY_ROLE[state.role].map((v) => (
@@ -139,6 +155,8 @@ export function DemoApp() {
         <FamilyRequests requests={requests} students={students} onOpenStudent={(id) => navigate("student", { id })} onUpdate={updateRequest} />
       )}
       {view === "value" && <Placeholder title={VIEW_LABELS.value} workstream={6} />}
+      </>
+      )}
     </div>
   );
 }

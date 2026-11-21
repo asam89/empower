@@ -8,13 +8,15 @@ import type { Role } from "../types";
 
 export interface DemoState {
   role: Role;
+  /** False until someone picks a role on the sign-in screen. */
+  roleChosen: boolean;
   schoolKey: string;
   edits: DemoEdits;
 }
 
 const STORAGE_KEY = "empower-demo-v1";
 
-export const SEED_STATE: DemoState = { role: "principal", schoolKey: DEFAULT_SCHOOL_KEY, edits: emptyEdits() };
+export const SEED_STATE: DemoState = { role: "principal", roleChosen: false, schoolKey: DEFAULT_SCHOOL_KEY, edits: emptyEdits() };
 
 let state: DemoState | null = null;
 const listeners = new Set<() => void>();
@@ -27,6 +29,7 @@ function load(): DemoState {
       const parsed = JSON.parse(raw) as Partial<DemoState>;
       loaded = {
         role: isRole(parsed.role) ? parsed.role : SEED_STATE.role,
+        roleChosen: parsed.roleChosen === true,
         schoolKey: isSchoolKey(parsed.schoolKey) ? parsed.schoolKey : SEED_STATE.schoolKey,
         edits: { ...emptyEdits(), ...parsed.edits },
       };
@@ -70,7 +73,7 @@ export function updateDemoState(updater: (current: DemoState) => DemoState) {
   listeners.forEach((l) => l());
 }
 
-/** Restore the seed data and role; keeps the school chosen for this session. */
+/** Restore the seed data and return to the sign-in screen; keeps the school chosen for this session. */
 export function resetDemo() {
   updateDemoState((current) => ({ ...SEED_STATE, schoolKey: current.schoolKey, edits: emptyEdits() }));
 }

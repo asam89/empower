@@ -330,6 +330,23 @@ export interface Message {
   text: string;
 }
 
+export type RequestKind = "question" | "concern" | "meeting" | "schedule" | "other";
+export type RequestStatus = "new" | "in_progress" | "resolved";
+
+/** A request or concern a parent sends to the school team from the parent hub. */
+export interface FamilyRequest {
+  id: string;
+  studentId: string;
+  /** Index into the student's `parents`, so no new names are introduced. */
+  parentIndex: number;
+  kind: RequestKind;
+  subject: string;
+  details: string;
+  date: string;
+  status: RequestStatus;
+  staffNote?: string;
+}
+
 export interface NotificationPrefs {
   channel: "sms" | "email" | "both";
   language: "en" | "ar" | "ur";
@@ -416,6 +433,4 @@ export interface ProgramMetrics {
   specialistHoursUsed: Record<string, number>;
   /** Parent hub views per week (sample data). */
   parentPortalViews: { weekOf: string; views: number }[];
-  /** Goals on track at the end of each month this term (sample history). */
-  goalsOnTrackHistory: { month: string; percent: number }[];
 }

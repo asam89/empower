@@ -248,7 +248,7 @@ const SPECS: StudentSpec[] = [
     exceptionality: { category: "Communication", definition: "Deaf and hard-of-hearing" }, profile: "dhh", character: ["perseverance", "responsibility"],
     goals: [
       { type: "on_task", subject: "ENG1D", baseline: 65, target: 90, start: FALL, trend: "up", intervention: iv("FM system and visual summaries of discussion", "t-eng", "Every class", 5) },
-      { type: "hifz_pacing", subject: "Quran", baseline: 4, target: 6, start: OCT, trend: "flat", intervention: iv("Written text alongside recitation", "quran-f", "Daily", 20) },
+      { type: "hifz_pacing", subject: "Quran", baseline: 4, target: 6, start: OCT, trend: "slow", intervention: iv("Written text alongside recitation", "quran-f", "Daily", 20) },
     ],
     parents: [{ name: "Rahma J.", relationship: "Mother", language: "en", channel: "email" }],
   },
@@ -321,7 +321,7 @@ const SPECS: StudentSpec[] = [
     subjectStatus: { Language: "MOD" },
     goals: [
       { type: "written_expression", subject: "Language", baseline: 20, target: 38, start: FALL, trend: "up", intervention: iv("Sentence frames and vocabulary pre-teaching", "sert-f", "3 times a week", 30) },
-      { type: "social_communication", subject: "Language", baseline: 2, target: 5, start: NOV, trend: "flat", intervention: iv("Structured group discussion roles", "slp", "Weekly", 30) },
+      { type: "social_communication", subject: "Language", baseline: 2, target: 5, start: NOV, trend: "slow", intervention: iv("Structured group discussion roles", "slp", "Weekly", 30) },
     ],
     parents: [{ name: "Ruqayya L.", relationship: "Mother", language: "ar" }],
   },
@@ -351,7 +351,7 @@ const SPECS: StudentSpec[] = [
     exceptionality: { category: "Physical", definition: "Physical disability" }, profile: "physical", character: ["leadership", "perseverance"],
     goals: [
       { type: "mobility", subject: "ENG4U", baseline: 60, target: 95, start: FALL, trend: "up", intervention: iv("Planned transition times and elevator access", "ot", "Every second week review", 30) },
-      { type: "written_expression", subject: "ENG4U", baseline: 50, target: 65, start: OCT, trend: "flat", intervention: iv("Speech-to-text for longer tasks", "sert-m", "Twice a week", 20) },
+      { type: "written_expression", subject: "ENG4U", baseline: 50, target: 65, start: OCT, trend: "slow", intervention: iv("Speech-to-text for longer tasks", "sert-m", "Twice a week", 20) },
     ],
     transitionPlan: {
       goals: ["Khalid graduates with the OSSD and starts a university computer science program."],

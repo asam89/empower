@@ -2,12 +2,30 @@ import { Avatar } from "../Avatar";
 import { homeroomLabel } from "../../lib/school";
 import type { SchoolConfig, Student } from "../../types";
 
-export function Roster({ school, students, onOpen }: { school: SchoolConfig; students: Student[]; onOpen: (id: string) => void }) {
+export function Roster({
+  school,
+  students,
+  filterLabel,
+  onClearFilter,
+  onOpen,
+}: {
+  school: SchoolConfig;
+  students: Student[];
+  filterLabel: string | null;
+  onClearFilter: () => void;
+  onOpen: (id: string) => void;
+}) {
   return (
     <section aria-labelledby="roster-heading">
       <h2 id="roster-heading" className="text-[1.4rem] font-bold text-brand-primary mb-4">
         Students
       </h2>
+      {filterLabel && (
+        <p className="mb-3 text-[0.9rem]">
+          Showing: <span className="font-semibold" data-testid="roster-filter">{filterLabel}</span> ({students.length}){" "}
+          <button type="button" onClick={onClearFilter} className="text-brand-primary underline font-semibold">Show all students</button>
+        </p>
+      )}
       <div className="overflow-x-auto bg-surface border border-border rounded-xl">
         <table className="w-full text-left text-[0.9rem]">
           <thead className="bg-cloud text-slate">

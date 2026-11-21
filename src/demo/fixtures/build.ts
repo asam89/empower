@@ -136,7 +136,7 @@ function buildPoints(goalId: string, spec: GoalSpec): ProgressPoint[] {
   const maxPoints = spec.maxPoints ?? 16;
   const totalWeeks = 36;
   const slope = (spec.target - spec.baseline) / totalWeeks;
-  const factor = spec.trend === "up" ? 1.6 : spec.trend === "slow" ? 0.7 : 0.08;
+  const factor = spec.trend === "up" ? 1.9 : spec.trend === "slow" ? 1.2 : 0.08;
   const noise = Math.max(1, Math.abs(spec.target - spec.baseline) * 0.07);
   const points: ProgressPoint[] = [];
   let ivWeek = 0;

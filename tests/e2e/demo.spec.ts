@@ -34,6 +34,19 @@ test("navigation switches views without a page load", async ({ page }) => {
   await expect(page).toHaveURL(/view=student&id=hana-k/);
 });
 
+test("dashboard figures open the filtered roster, and charts have a table view", async ({ page }) => {
+  await unlock(page);
+  await expect(page.getByRole("heading", { name: /Needs attention/ })).toBeVisible();
+  await page.getByRole("button", { name: "View as table" }).first().click();
+  await expect(page.getByRole("cell", { name: "Tier 3" })).toBeVisible();
+  await page.getByRole("button", { name: /IEPs active/ }).click();
+  await expect(page.getByTestId("roster-filter")).toHaveText("IEP in development");
+  const table = page.locator("table");
+  await expect(table).toContainText("Yusuf A.");
+  await expect(table).toContainText("Layla B.");
+  await expect(table).not.toContainText("Hana K.");
+});
+
 test("the Parent role only ever sees their own child", async ({ page }) => {
   await unlock(page);
   await page.getByRole("button", { name: "Parent", exact: true }).click();

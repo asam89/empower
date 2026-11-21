@@ -13,6 +13,7 @@ const eslintConfig = defineConfig([
     "build/**",
     "next-env.d.ts",
     ".vercel/**",
+    ".wrangler/**",
     "playwright-report/**",
     "test-results/**",
   ]),

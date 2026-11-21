@@ -79,3 +79,35 @@ test("Reset demo restores the seed state", async ({ page }) => {
 test("robots.txt excludes the demo", async ({ request }) => {
   expect(await (await request.get("/robots.txt")).text()).toContain("Disallow: /demo");
 });
+
+test("a parent's request reaches the principal, and the reply reaches the parent", async ({ page }) => {
+  await unlock(page);
+  await page.getByRole("button", { name: "Parent", exact: true }).click();
+  await expect(page.getByRole("heading", { name: "Yusuf's growth path" })).toBeVisible();
+  await page.getByLabel("Subject").fill("Reading book for the weekend");
+  await page.getByLabel("Details").fill("Could Yusuf bring his reading group book home this weekend?");
+  await page.getByRole("button", { name: "Send to school" }).click();
+  await expect(page.getByText("Sent to the school team.")).toBeVisible();
+
+  await page.getByRole("button", { name: "Principal", exact: true }).click();
+  await page.getByRole("button", { name: /Family requests/ }).click();
+  const item = page.locator("li", { hasText: "Reading book for the weekend" });
+  await expect(item).toContainText("From Amina A. (Mother) about");
+  await item.getByLabel("Reply to family").fill("Yes, it will be in his bag on Friday.");
+  await item.getByRole("button", { name: "Reply" }).click();
+  await expect(item).toContainText("In progress");
+
+  await page.getByRole("button", { name: "Parent", exact: true }).click();
+  await expect(page.getByText("School: Yes, it will be in his bag on Friday.")).toBeVisible();
+});
+
+test("adding a weekly result updates the goal status", async ({ page }) => {
+  await unlock(page);
+  await page.goto("/demo?view=student&id=yusuf-a");
+  await expect(page.getByRole("heading", { name: "Progress monitoring" })).toBeVisible();
+  const card = page.locator("article", { hasText: "Reading" }).first();
+  await card.getByRole("spinbutton").fill("999");
+  await card.getByRole("button", { name: "Add point" }).click();
+  await expect(card.getByText("On track")).toBeVisible();
+  await expect(card.locator("dd").nth(1)).toHaveText("999");
+});

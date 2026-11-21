@@ -8,7 +8,7 @@ export const VIEW_LABELS: Record<View, string> = {
   roster: "Students",
   student: "Student",
   pipeline: "Identification pipeline",
-  notify: "Notifications",
+  notify: "Family requests",
   value: "Value",
   parent: "My child",
 };

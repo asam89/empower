@@ -10,7 +10,9 @@ import { CALENDAR } from "../fixtures/calendar";
 import { ROSTER_FILTERS, applyFilter, isRosterFilter } from "../lib/filters";
 import { Roster } from "./views/Roster";
 import { StudentSummary } from "./views/StudentSummary";
-import { ParentPreview } from "./views/ParentPreview";
+import { ParentHub } from "./views/ParentHub";
+import { FamilyRequests } from "./views/FamilyRequests";
+import { openRequestCount } from "../lib/requests";
 import { Placeholder } from "./views/Placeholder";
 
 const ROLES: Role[] = ["principal", "sert", "teacher", "parent"];
@@ -26,7 +28,8 @@ function navigate(view: View, opts: { id?: string; filter?: string } = {}) {
 
 export function DemoApp() {
   const params = useSearchParams();
-  const { state, school, students, setRole, reset } = useDemo();
+  const { state, school, students, requests, setRole, reset, addPoint, addMessage, addRequest, updateRequest } = useDemo();
+  const openRequests = openRequestCount(requests);
   const visible = visibleStudents(state.role, students);
   const { view, studentId } = resolveView(state.role, params.get("view"), params.get("id"), visible);
   const student = studentId ? visible.find((s) => s.id === studentId) : undefined;
@@ -93,6 +96,11 @@ export function DemoApp() {
                 className={`px-4 py-2 rounded-full text-[0.9rem] font-medium border ${view === v ? "bg-brand-primary text-white border-brand-primary" : "bg-surface border-border text-ink hover:border-brand-primary"}`}
               >
                 {VIEW_LABELS[v]}
+                {v === "notify" && openRequests > 0 && (
+                  <span aria-label={`${openRequests} open`} className="ml-2 inline-flex items-center justify-center min-w-5 h-5 px-1.5 rounded-full bg-brand-accent text-white text-[0.72rem] font-bold">
+                    {openRequests}
+                  </span>
+                )}
               </button>
             </li>
           ))}
@@ -116,10 +124,20 @@ export function DemoApp() {
           onOpen={(id) => navigate("student", { id })}
         />
       )}
-      {view === "student" && student && <StudentSummary school={school} student={student} />}
-      {view === "parent" && student && <ParentPreview student={student} />}
+      {view === "student" && student && <StudentSummary school={school} student={student} onAddPoint={addPoint} />}
+      {view === "parent" && student && (
+        <ParentHub
+          school={school}
+          student={student}
+          requests={requests}
+          onMessage={(m) => addMessage(student.id, m)}
+          onRequest={addRequest}
+        />
+      )}
       {view === "pipeline" && <Placeholder title={VIEW_LABELS.pipeline} workstream={4} />}
-      {view === "notify" && <Placeholder title={VIEW_LABELS.notify} workstream={5} />}
+      {view === "notify" && (
+        <FamilyRequests requests={requests} students={students} onOpenStudent={(id) => navigate("student", { id })} onUpdate={updateRequest} />
+      )}
       {view === "value" && <Placeholder title={VIEW_LABELS.value} workstream={6} />}
     </div>
   );

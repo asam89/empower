@@ -18,6 +18,7 @@ export default async function PortalLayout({ children }: { children: React.React
           ...(user.role === "admin"
             ? [
                 { href: "/portal/team", label: "Team" },
+                { href: "/portal/backups", label: "Backups" },
                 { href: "/admin", label: "Leads" },
               ]
             : []),

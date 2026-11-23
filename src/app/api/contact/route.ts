@@ -39,23 +39,26 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const clean = (v: unknown, max: number) => (typeof v === "string" ? v.trim().slice(0, max) : "") || null;
-    await getDB()
-      .prepare(
-        "INSERT INTO leads (name, role, org, email, phone, message, source) VALUES (?, ?, ?, ?, ?, ?, 'contact_form')"
-      )
-      .bind(
-        clean(body.name, 120),
-        clean(body.role, 120),
-        clean(body.org, 200),
-        body.email.trim().toLowerCase().slice(0, 200),
-        clean(body.phone, 40),
-        clean(body.message, 5000)
-      )
-      .run();
+    const db = getDB();
+    if (db) {
+      await db
+        .prepare(
+          "INSERT INTO leads (name, role, org, email, phone, message, source) VALUES (?, ?, ?, ?, ?, ?, ?)"
+        )
+        .bind(body.name, body.role || null, body.org, body.email, body.phone || null, body.message, "contact_form")
+        .run();
+    } else {
+      console.log("Lead received (no database configured):", {
+        name: body.name,
+        org: body.org,
+        email: body.email,
+        source: "contact_form",
+      });
+    }
 
     return NextResponse.json({ success: true });
-  } catch {
+  } catch (err) {
+    console.error("Contact form error:", err);
     return NextResponse.json(
       { error: "Something went wrong. Please try again." },
       { status: 500 }

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createSession, SESSION_COOKIE, sessionCookieOptions } from "@/lib/auth";
-import { getDB } from "@/lib/db";
+import { requireDB } from "@/lib/db";
 
 export const runtime = "edge";
 
@@ -17,7 +17,7 @@ export async function GET(request: NextRequest) {
   if (!["admin", "teacher", "parent"].includes(role)) {
     return new NextResponse("Bad role", { status: 400 });
   }
-  const db = getDB();
+  const db = requireDB();
   await db
     .prepare("INSERT INTO users (email, name, role) VALUES (?, ?, ?) ON CONFLICT(email) DO NOTHING")
     .bind(email, email.split("@")[0], role)
